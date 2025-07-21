@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Tournament Players</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    h2 { margin-top: 1.5em; }
+    h3 { margin-top: 1em; margin-bottom: 0.3em; }
+    ul { list-style: none; padding-left: 20px; }
+    li.waitlist { color: #b00; }
+  </style>
+</head>
+<body>
+  <h1>Tournament Events</h1>
+  <div id="tournaments">Loading...</div>
+  <script>
+    fetch('tournament_events_with_players.json')
+      .then(r => r.json())
+      .then(data => {
+        const container = document.getElementById('tournaments');
+        container.textContent = '';
+        data.forEach(group => {
+          const groupDiv = document.createElement('div');
+          const groupTitle = document.createElement('h2');
+          groupTitle.textContent = group.groupTitle;
+          groupDiv.appendChild(groupTitle);
+          (group.events || []).forEach(evt => {
+            const evtDiv = document.createElement('div');
+            const evtTitle = document.createElement('h3');
+            evtTitle.textContent = evt.title;
+            evtDiv.appendChild(evtTitle);
+            const list = document.createElement('ul');
+            if (evt.players && evt.players.length) {
+              evt.players.forEach(p => {
+                const li = document.createElement('li');
+                const playerLink = document.createElement('a');
+                playerLink.href = `https://pickleballtournaments.com/playerprofile.asp?playerid=${p.playerId}`;
+                playerLink.target = '_blank';
+                playerLink.textContent = p.playerFullName;
+                li.appendChild(playerLink);
+                if (p.partnerId) {
+                  li.appendChild(document.createTextNode(' & '));
+                  const partnerLink = document.createElement('a');
+                  partnerLink.href = `https://pickleballtournaments.com/playerprofile.asp?playerid=${p.partnerId}`;
+                  partnerLink.target = '_blank';
+                  partnerLink.textContent = p.partnerFullName;
+                  li.appendChild(partnerLink);
+                }
+                if (p.isOnWaitlist) li.classList.add('waitlist');
+                list.appendChild(li);
+              });
+            } else {
+              const li = document.createElement('li');
+              li.textContent = 'No players yet';
+              list.appendChild(li);
+            }
+            evtDiv.appendChild(list);
+            groupDiv.appendChild(evtDiv);
+          });
+          container.appendChild(groupDiv);
+        });
+      })
+      .catch(err => {
+        document.getElementById('tournaments').textContent = 'Failed to load data';
+        console.error(err);
+      });
+  </script>
+</body>
+</html>
