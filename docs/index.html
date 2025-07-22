@@ -9,22 +9,27 @@
   <style>
     body {
       font-family: 'Inter', Arial, sans-serif;
-      margin: 20px;
-      background-color: #f7f9fb;
+      margin: 2rem;
+      background-color: #f8fafc;
       color: #0f172a;
     }
+    .container {
+      max-width: 800px;
+      margin: 0 auto;
+    }
     h1 {
-      color: #3ecf8e;
+      color: #0f172a;
+      font-size: 1.5rem;
+      font-weight: 600;
+      margin-bottom: 1rem;
     }
-    h2 {
-      margin-top: 2em;
-      padding-bottom: 0.3em;
-      border-bottom: 1px solid #e5e7eb;
-    }
-    h3 {
-      margin-top: 1em;
-      margin-bottom: 0.3em;
-      color: #334155;
+    select {
+      display: block;
+      padding: 0.5rem;
+      border: 1px solid #cbd5e1;
+      border-radius: 0.375rem;
+      background: #fff;
+      margin-bottom: 1rem;
     }
     ul {
       list-style: none;
@@ -43,89 +48,109 @@
     li.waitlist {
       color: #dc2626;
     }
-    .group {
-      margin-bottom: 2em;
-    }
-    .event {
+    .card {
       background-color: #fff;
-      padding: 1em;
-      margin-bottom: 1em;
-      border-radius: 8px;
+      border: 1px solid #e5e7eb;
+      border-radius: 0.5rem;
+      padding: 1rem;
       box-shadow: 0 1px 2px rgba(0,0,0,0.05);
     }
   </style>
 </head>
 <body>
-  <h1>Tournament Events</h1>
-  <div id="tournaments">Loading...</div>
+  <div class="container">
+    <h1>Tournament Events</h1>
+    <select id="eventSelect">
+      <option value="">Select an event...</option>
+    </select>
+    <div id="eventDetails"></div>
+  </div>
   <script>
+    function renderEvent(data) {
+      const container = document.getElementById('eventDetails');
+      container.textContent = '';
+      if (!data) return;
+
+      const card = document.createElement('div');
+      card.className = 'card';
+
+      const title = document.createElement('h2');
+      title.textContent = `${data.groupTitle} - ${data.event.title}`;
+      card.appendChild(title);
+
+      const list = document.createElement('ul');
+      if (data.event.players && data.event.players.length) {
+        data.event.players.forEach(p => {
+          const li = document.createElement('li');
+          const playerLink = document.createElement('a');
+          if (p.playerSlug) {
+            playerLink.href = `https://pickleball.com/players/${p.playerSlug}`;
+          } else {
+            playerLink.href = `https://pickleballtournaments.com/playerprofile.asp?playerid=${p.playerId}`;
+          }
+          playerLink.target = '_blank';
+          playerLink.textContent = p.playerFullName;
+          li.appendChild(playerLink);
+          if (p.partnerId) {
+            li.appendChild(document.createTextNode(' & '));
+            const partnerLink = document.createElement('a');
+            if (p.partnerSlug) {
+              partnerLink.href = `https://pickleball.com/players/${p.partnerSlug}`;
+            } else {
+              partnerLink.href = `https://pickleballtournaments.com/playerprofile.asp?playerid=${p.partnerId}`;
+            }
+            partnerLink.target = '_blank';
+            partnerLink.textContent = p.partnerFullName;
+            li.appendChild(partnerLink);
+          }
+          if (p.playerDuprRating) {
+            li.appendChild(document.createTextNode(` (DUPR: ${p.playerDuprRating}`));
+            if (p.partnerDuprRating) {
+              li.appendChild(document.createTextNode(`/${p.partnerDuprRating}`));
+            }
+            li.appendChild(document.createTextNode(')'));
+          } else if (p.partnerDuprRating) {
+            li.appendChild(document.createTextNode(` (Partner DUPR: ${p.partnerDuprRating})`));
+          }
+          if (p.isOnWaitlist) li.classList.add('waitlist');
+          list.appendChild(li);
+        });
+      } else {
+        const li = document.createElement('li');
+        li.textContent = 'No players yet';
+        list.appendChild(li);
+      }
+      card.appendChild(list);
+      container.appendChild(card);
+    }
+
     fetch('tournament_events_with_players.json')
       .then(r => r.json())
       .then(data => {
-        const container = document.getElementById('tournaments');
-        container.textContent = '';
+        const select = document.getElementById('eventSelect');
+        const events = [];
         data.forEach(group => {
-          const groupDiv = document.createElement('div');
-          groupDiv.className = 'group';
-          const groupTitle = document.createElement('h2');
-          groupTitle.textContent = group.groupTitle;
-          groupDiv.appendChild(groupTitle);
           (group.events || []).forEach(evt => {
-          const evtDiv = document.createElement('div');
-          evtDiv.className = 'event';
-          const evtTitle = document.createElement('h3');
-          evtTitle.textContent = evt.title;
-          evtDiv.appendChild(evtTitle);
-            const list = document.createElement('ul');
-            if (evt.players && evt.players.length) {
-              evt.players.forEach(p => {
-                const li = document.createElement('li');
-                const playerLink = document.createElement('a');
-                if (p.playerSlug) {
-                  playerLink.href = `https://pickleball.com/players/${p.playerSlug}`;
-                } else {
-                  playerLink.href = `https://pickleballtournaments.com/playerprofile.asp?playerid=${p.playerId}`;
-                }
-                playerLink.target = '_blank';
-                playerLink.textContent = p.playerFullName;
-                li.appendChild(playerLink);
-                if (p.partnerId) {
-                  li.appendChild(document.createTextNode(' & '));
-                  const partnerLink = document.createElement('a');
-                  if (p.partnerSlug) {
-                    partnerLink.href = `https://pickleball.com/players/${p.partnerSlug}`;
-                  } else {
-                    partnerLink.href = `https://pickleballtournaments.com/playerprofile.asp?playerid=${p.partnerId}`;
-                  }
-                  partnerLink.target = '_blank';
-                  partnerLink.textContent = p.partnerFullName;
-                  li.appendChild(partnerLink);
-                }
-                if (p.playerDuprRating) {
-                  li.appendChild(document.createTextNode(` (DUPR: ${p.playerDuprRating}`));
-                  if (p.partnerDuprRating) {
-                    li.appendChild(document.createTextNode(`/${p.partnerDuprRating}`));
-                  }
-                  li.appendChild(document.createTextNode(')'));
-                } else if (p.partnerDuprRating) {
-                  li.appendChild(document.createTextNode(` (Partner DUPR: ${p.partnerDuprRating})`));
-                }
-                if (p.isOnWaitlist) li.classList.add('waitlist');
-                list.appendChild(li);
-              });
-            } else {
-              const li = document.createElement('li');
-              li.textContent = 'No players yet';
-              list.appendChild(li);
-            }
-            evtDiv.appendChild(list);
-            groupDiv.appendChild(evtDiv);
+            events.push({ groupTitle: group.groupTitle, event: evt });
+            const option = document.createElement('option');
+            option.value = events.length - 1;
+            option.textContent = `${group.groupTitle} - ${evt.title}`;
+            select.appendChild(option);
           });
-          container.appendChild(groupDiv);
         });
+
+        select.addEventListener('change', () => {
+          const idx = select.value;
+          renderEvent(events[idx]);
+        });
+
+        if (events.length) {
+          select.value = '0';
+          renderEvent(events[0]);
+        }
       })
       .catch(err => {
-        document.getElementById('tournaments').textContent = 'Failed to load data';
+        document.getElementById('eventDetails').textContent = 'Failed to load data';
         console.error(err);
       });
   </script>
